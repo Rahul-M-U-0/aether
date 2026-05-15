@@ -122,11 +122,11 @@ class _WorldBossTimerState extends State<WorldBossTimer>
             _hasTriggeredCompletion = true;
             WidgetsBinding.instance.addPostFrameCallback((_) async {
               await widget.onTimerComplete();
-              if (!mounted) {
-                return;
-              }
-              _hasTriggeredCompletion = false;
             });
+          } else if (milliseconds > 0 && _hasTriggeredCompletion) {
+            // Reset the flag only when the timer has successfully restarted
+            // with the new future raidStartsAt time.
+            _hasTriggeredCompletion = false;
           }
 
           final Color timerColor = _timerColor(milliseconds);

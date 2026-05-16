@@ -34,9 +34,7 @@ abstract final class AppTheme {
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(
-            color: AppColors.primary.withValues(alpha: 0.3),
-          ),
+          side: BorderSide(color: AppColors.primary.withValues(alpha: 0.3)),
         ),
       ),
       snackBarTheme: SnackBarThemeData(
@@ -45,9 +43,7 @@ abstract final class AppTheme {
           color: AppColors.textPrimary,
           fontSize: 14,
         ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         behavior: SnackBarBehavior.floating,
       ),
     );

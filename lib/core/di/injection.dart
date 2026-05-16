@@ -18,7 +18,5 @@ Future<void> init() async {
     () => RaidRemoteDataSource(sl(), sl()),
   );
 
-  sl.registerLazySingleton<RaidRepository>(
-    () => RaidRepositoryImpl(sl()),
-  );
+  sl.registerLazySingleton<RaidRepository>(() => RaidRepositoryImpl(sl()));
 }

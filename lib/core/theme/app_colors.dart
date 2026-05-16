@@ -20,4 +20,16 @@ abstract final class AppColors {
   static const Color textPrimary = Color(0xFFECECEC);
   static const Color textSecondary = Color(0xFF8E8E9E);
   static const Color textGold = Color(0xFFFFD740);
+
+  // Stitch Design Colors
+  static const Color neonYellow = Color(0xFFE5FF00);
+  static const Color neonGreen = Color(0xFF00FF00);
+  static const Color metallicGold = Color(0xFFFFD700);
+  static const Color metallicGoldDark = Color(0xFFB8860B);
+  static const Color darkPurple = Color(0xFF1B003A);
+  static const Color neonPurple = Color(0xFFB800FF);
+  static const Color neonLime = Color(0xFFC4FF00);
+  static const Color lightCyan = Color(0xFF00FFFF);
+  static const Color runeGold = Color(0xFFF2C94C);
+  static const Color deepBronze = Color(0xFF5E371A);
 }

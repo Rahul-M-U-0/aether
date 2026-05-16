@@ -11,9 +11,15 @@ class RaidRepositoryImpl implements RaidRepository {
   final RaidRemoteDataSource _remoteDataSource;
 
   @override
-  Future<bool> joinRaid({required String userId}) async {
+  Future<bool> joinRaid({
+    required String userId,
+    required String userName,
+  }) async {
     try {
-      return await _remoteDataSource.joinRaid(userId: userId);
+      return await _remoteDataSource.joinRaid(
+        userId: userId,
+        userName: userName,
+      );
     } on FirebaseException catch (e) {
       throw AppException('Failed to join raid: ${e.message}');
     }

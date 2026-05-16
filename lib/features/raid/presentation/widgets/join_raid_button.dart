@@ -6,12 +6,14 @@ class JoinRaidButton extends StatefulWidget {
     required this.onPressed,
     required this.isLoading,
     required this.isFull,
+    this.isJoined = false,
     super.key,
   });
 
   final VoidCallback onPressed;
   final bool isLoading;
   final bool isFull;
+  final bool isJoined;
 
   @override
   State<JoinRaidButton> createState() => _JoinRaidButtonState();
@@ -46,7 +48,7 @@ class _JoinRaidButtonState extends State<JoinRaidButton>
   }
 
   void _updateGlow() {
-    if (widget.isLoading || widget.isFull) {
+    if (widget.isLoading || widget.isFull || widget.isJoined) {
       _controller.stop();
     } else {
       _controller.repeat(reverse: true);
@@ -61,7 +63,7 @@ class _JoinRaidButtonState extends State<JoinRaidButton>
 
   @override
   Widget build(BuildContext context) {
-    final bool disabled = widget.isLoading || widget.isFull;
+    final bool disabled = widget.isLoading || widget.isFull || widget.isJoined;
 
     return AnimatedBuilder(
       animation: _glow,
@@ -124,7 +126,11 @@ class _JoinRaidButtonState extends State<JoinRaidButton>
                           mainAxisSize: MainAxisSize.min,
                           children: <Widget>[
                             Icon(
-                              widget.isFull ? Icons.lock_outline : Icons.bolt,
+                              widget.isJoined
+                                  ? Icons.check_circle_outline
+                                  : (widget.isFull
+                                        ? Icons.lock_outline
+                                        : Icons.bolt),
                               size: 22,
                               color: disabled
                                   ? AppColors.textSecondary
@@ -134,9 +140,11 @@ class _JoinRaidButtonState extends State<JoinRaidButton>
                             const SizedBox(width: 8),
 
                             Text(
-                              widget.isFull ? 'RAID FULL' : 'JOIN RAID',
+                              widget.isJoined
+                                  ? 'ALREADY JOINED'
+                                  : (widget.isFull ? 'RAID FULL' : 'JOIN RAID'),
                               style: TextStyle(
-                                fontSize: 19,
+                                fontSize: 17,
                                 height: 1,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: 0.6,

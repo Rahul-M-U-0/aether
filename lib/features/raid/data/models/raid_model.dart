@@ -13,9 +13,9 @@ class RaidModel extends RaidEntity {
   factory RaidModel.fromMap(Map<String, dynamic> map) {
     return RaidModel(
       slotsFilled: map['slotsFilled'] as int? ?? 0,
-      members: List<String>.from(
-        map['members'] as List<dynamic>? ?? <dynamic>[],
-      ),
+      members: (map['members'] as List<dynamic>? ?? <dynamic>[])
+          .map((dynamic m) => RaidMember.fromMap(m as Map<String, dynamic>))
+          .toList(),
       raidStartsAt: map['raidStartsAt'] != null
           ? (map['raidStartsAt'] as Timestamp).toDate()
           : throw AppException('Raid document missing raidStartsAt field'),

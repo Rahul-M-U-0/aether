@@ -33,7 +33,10 @@ class RaidRemoteDataSource {
   }
 
   // Join raid
-  Future<bool> joinRaid({required String userId}) async {
+  Future<bool> joinRaid({
+    required String userId,
+    required String userName,
+  }) async {
     return _firestore.runTransaction((Transaction transaction) async {
       final DocumentSnapshot<Map<String, dynamic>> snapshot = await transaction
           .get(_raidRef);
@@ -46,13 +49,20 @@ class RaidRemoteDataSource {
 
       final int slotsFilled = data['slotsFilled'] as int? ?? 0;
 
-      final List<String> members = List<String>.from(
-        data['members'] as List<dynamic>? ?? <dynamic>[],
-      );
+      final List<dynamic> membersRaw =
+          data['members'] as List<dynamic>? ?? <dynamic>[];
+      final List<RaidMember> members = membersRaw
+          .map((dynamic m) => RaidMember.fromMap(m as Map<String, dynamic>))
+          .toList();
 
       // User already joined
-      if (members.contains(userId)) {
+      if (members.any((RaidMember m) => m.id == userId)) {
         return true;
+      }
+
+      // Name already taken by someone else
+      if (members.any((RaidMember m) => m.name == userName)) {
+        throw AppException('The name "$userName" is already taken.');
       }
 
       // No slots available — uses domain constant as single source of truth
@@ -60,10 +70,14 @@ class RaidRemoteDataSource {
         return false;
       }
 
+      final RaidMember newMember = RaidMember(id: userId, name: userName);
+
       // Join the raid
       transaction.update(_raidRef, <String, Object>{
         'slotsFilled': slotsFilled + 1,
-        'members': FieldValue.arrayUnion(<String>[userId]),
+        'members': FieldValue.arrayUnion(<Map<String, String>>[
+          newMember.toMap(),
+        ]),
       });
 
       return true;

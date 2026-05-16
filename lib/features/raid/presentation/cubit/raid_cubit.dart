@@ -26,11 +26,17 @@ class RaidCubit extends Cubit<RaidState> {
     );
   }
 
-  Future<void> joinRaid({required String userId}) async {
+  Future<void> joinRaid({
+    required String userId,
+    required String userName,
+  }) async {
     emit(state.copyWith(isLoading: true));
 
     try {
-      final bool success = await _repository.joinRaid(userId: userId);
+      final bool success = await _repository.joinRaid(
+        userId: userId,
+        userName: userName,
+      );
 
       emit(state.copyWith(isLoading: false, joinSuccess: success));
     } catch (error) {

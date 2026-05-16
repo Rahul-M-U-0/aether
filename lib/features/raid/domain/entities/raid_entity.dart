@@ -1,5 +1,26 @@
 import 'package:equatable/equatable.dart';
 
+class RaidMember extends Equatable {
+  const RaidMember({required this.id, required this.name});
+
+  final String id;
+  final String name;
+
+  @override
+  List<Object> get props => <Object>[id, name];
+
+  Map<String, String> toMap() {
+    return <String, String>{'id': id, 'name': name};
+  }
+
+  factory RaidMember.fromMap(Map<String, dynamic> map) {
+    return RaidMember(
+      id: map['id'] as String? ?? '',
+      name: map['name'] as String? ?? '',
+    );
+  }
+}
+
 class RaidEntity extends Equatable {
   const RaidEntity({
     required this.slotsFilled,
@@ -11,7 +32,7 @@ class RaidEntity extends Equatable {
   static const int maxSlots = 15;
 
   final int slotsFilled;
-  final List<String> members;
+  final List<RaidMember> members;
   final DateTime raidStartsAt;
 
   bool get isFull => slotsFilled >= maxSlots;

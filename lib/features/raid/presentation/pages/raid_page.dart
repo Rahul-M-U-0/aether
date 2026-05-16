@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:aether/core/theme/app_colors.dart';
 import 'package:aether/features/raid/domain/entities/raid_entity.dart';
 import 'package:aether/features/raid/presentation/widgets/cosmic_backgrounf.dart';
 import 'package:aether/features/raid/presentation/widgets/raid_appbar.dart';
 import 'package:aether/features/timer/presentation/widgets/world_boss_timer.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -11,8 +14,59 @@ import '../cubit/raid_state.dart';
 import '../widgets/join_raid_button.dart';
 import '../widgets/raid_status_card.dart';
 
-class RaidPage extends StatelessWidget {
+class RaidPage extends StatefulWidget {
   const RaidPage({super.key});
+
+  @override
+  State<RaidPage> createState() => _RaidPageState();
+}
+
+class _RaidPageState extends State<RaidPage> {
+  final TextEditingController _nameController = TextEditingController();
+  String? _deviceId;
+
+  @override
+  void initState() {
+    super.initState();
+    _getDeviceId();
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _getDeviceId() async {
+    final DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+    String? id;
+    try {
+      if (Platform.isAndroid) {
+        final AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+        id = androidInfo.id;
+      } else if (Platform.isIOS) {
+        final IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
+        id = iosInfo.identifierForVendor;
+      } else if (Platform.isWindows) {
+        final WindowsDeviceInfo windowsInfo = await deviceInfo.windowsInfo;
+        id = windowsInfo.deviceId;
+      } else if (Platform.isMacOS) {
+        final MacOsDeviceInfo macInfo = await deviceInfo.macOsInfo;
+        id = macInfo.systemGUID;
+      } else if (Platform.isLinux) {
+        final LinuxDeviceInfo linuxInfo = await deviceInfo.linuxInfo;
+        id = linuxInfo.machineId;
+      }
+    } catch (e) {
+      id = 'unknown_device_${DateTime.now().millisecondsSinceEpoch}';
+    }
+
+    if (mounted) {
+      setState(() {
+        _deviceId = id;
+      });
+    }
+  }
 
   void _showAetherSnackBar(
     BuildContext context, {
@@ -65,10 +119,7 @@ class RaidPage extends StatelessWidget {
       ),
       body: Stack(
         children: <Widget>[
-          // Background
           const CosmicBackground(),
-
-          // Body
           SafeArea(
             child: BlocConsumer<RaidCubit, RaidState>(
               listener: (BuildContext context, RaidState state) {
@@ -111,26 +162,33 @@ class RaidPage extends StatelessWidget {
               builder: (BuildContext context, RaidState state) {
                 final RaidEntity? raid = state.raid;
 
-                if (raid == null) {
+                if (raid == null || _deviceId == null) {
                   return const Center(
                     child: CircularProgressIndicator(color: AppColors.primary),
                   );
                 }
+
+                final bool isJoined = raid.members.any(
+                  (RaidMember m) => m.id == _deviceId,
+                );
 
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
                     children: <Widget>[
                       const SizedBox(height: 8),
-
                       WorldBossTimer(
                         raidStartsAt: raid.raidStartsAt,
                         onTimerComplete: () async {
                           await context.read<RaidCubit>().resetRaid();
                         },
                       ),
-
                       const SizedBox(height: 24),
+
+                      if (!isJoined && !raid.isFull) ...<Widget>[
+                        _NameInput(controller: _nameController),
+                        const SizedBox(height: 16),
+                      ],
 
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -141,10 +199,21 @@ class RaidPage extends StatelessWidget {
                             child: JoinRaidButton(
                               isLoading: state.isLoading,
                               isFull: raid.isFull,
+                              isJoined: isJoined,
                               onPressed: () {
+                                final String name = _nameController.text.trim();
+                                if (name.isEmpty) {
+                                  _showAetherSnackBar(
+                                    context,
+                                    message: 'Please enter your name',
+                                    icon: Icons.person_outline,
+                                    iconColor: AppColors.warning,
+                                  );
+                                  return;
+                                }
                                 context.read<RaidCubit>().joinRaid(
-                                  userId: DateTime.now().millisecondsSinceEpoch
-                                      .toString(),
+                                  userId: _deviceId!,
+                                  userName: name,
                                 );
                               },
                             ),
@@ -226,7 +295,7 @@ class RaidPage extends StatelessWidget {
                                 itemBuilder: (BuildContext context, int index) {
                                   return _MemberTile(
                                     index: index,
-                                    memberId: raid.members[index],
+                                    member: raid.members[index],
                                   );
                                 },
                               ),
@@ -243,31 +312,72 @@ class RaidPage extends StatelessWidget {
   }
 }
 
-class _MemberTile extends StatelessWidget {
-  const _MemberTile({required this.index, required this.memberId});
+class _NameInput extends StatelessWidget {
+  const _NameInput({required this.controller});
 
-  final int index;
-  final String memberId;
+  final TextEditingController controller;
 
   @override
   Widget build(BuildContext context) {
-    final String shortId = memberId.length > 4
-        ? memberId.substring(memberId.length - 4)
-        : memberId;
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF14103A).withValues(alpha: 0.8),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.neonPurple.withValues(alpha: 0.5),
+          width: 1.5,
+        ),
+      ),
+      child: TextField(
+        controller: controller,
+        onTapOutside: (_) {
+          FocusScope.of(context).unfocus();
+        },
+        style: const TextStyle(color: AppColors.textPrimary, fontSize: 16),
+        decoration: InputDecoration(
+          hintText: 'ENTER YOUR NAME',
+          hintStyle: TextStyle(
+            color: AppColors.textSecondary.withValues(alpha: 0.5),
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 2,
+          ),
+          prefixIcon: const Icon(
+            Icons.person_pin_rounded,
+            color: AppColors.neonPurple,
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
+        ),
+      ),
+    );
+  }
+}
 
+class _MemberTile extends StatelessWidget {
+  const _MemberTile({required this.index, required this.member});
+
+  final int index;
+  final RaidMember member;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
         color: const Color(0xFF14103A),
         border: Border.all(
-          color: AppColors.neonPurple.withValues(alpha: 0.8),
-          width: 1.5,
+          color: AppColors.neonPurple.withValues(alpha: 0.4),
+          width: 1,
         ),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: AppColors.neonPurple.withValues(alpha: 0.2),
-            blurRadius: 8,
+            color: AppColors.neonPurple.withValues(alpha: 0.1),
+            blurRadius: 10,
           ),
         ],
       ),
@@ -277,32 +387,33 @@ class _MemberTile extends StatelessWidget {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(6),
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: <Color>[Color(0xFF4A00E0), Color(0xFF1B003A)],
               ),
-              border: Border.all(color: AppColors.primaryLight, width: 1),
+              border: Border.all(
+                color: AppColors.primaryLight.withValues(alpha: 0.5),
+                width: 1,
+              ),
             ),
             child: const Center(
-              child: Icon(Icons.person, color: Colors.white, size: 24),
+              child: Icon(Icons.person_rounded, color: Colors.white, size: 24),
             ),
           ),
-          const SizedBox(width: 12),
-          const Icon(Icons.shield, color: AppColors.metallicGoldDark, size: 18),
-          const SizedBox(width: 8),
+          const SizedBox(width: 16),
           Expanded(
             child: Text(
-              'Player #$shortId',
+              member.name,
               style: const TextStyle(
                 color: AppColors.textPrimary,
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
               ),
-              overflow: TextOverflow.ellipsis,
             ),
           ),
+          const Icon(Icons.shield, color: AppColors.metallicGoldDark, size: 20),
         ],
       ),
     );

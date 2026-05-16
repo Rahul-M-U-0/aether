@@ -141,7 +141,7 @@ class _JoinRaidButtonState extends State<JoinRaidButton>
 
                             Text(
                               widget.isJoined
-                                  ? 'ALREADY JOINED'
+                                  ? 'JOINED'
                                   : (widget.isFull ? 'RAID FULL' : 'JOIN RAID'),
                               style: TextStyle(
                                 fontSize: 17,

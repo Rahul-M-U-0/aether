@@ -23,12 +23,15 @@ class RaidPage extends StatefulWidget {
 
 class _RaidPageState extends State<RaidPage> {
   final TextEditingController _nameController = TextEditingController();
-  String? _deviceId;
+  static String? _cachedDeviceId;
+  String? _deviceId = _cachedDeviceId;
 
   @override
   void initState() {
     super.initState();
-    _getDeviceId();
+    if (_deviceId == null) {
+      _getDeviceId();
+    }
   }
 
   @override
@@ -64,6 +67,7 @@ class _RaidPageState extends State<RaidPage> {
     if (mounted) {
       setState(() {
         _deviceId = id;
+        _cachedDeviceId = id;
       });
     }
   }
@@ -177,11 +181,13 @@ class _RaidPageState extends State<RaidPage> {
                   child: Column(
                     children: <Widget>[
                       const SizedBox(height: 8),
-                      WorldBossTimer(
-                        raidStartsAt: raid.raidStartsAt,
-                        onTimerComplete: () async {
-                          await context.read<RaidCubit>().resetRaid();
-                        },
+                      RepaintBoundary(
+                        child: WorldBossTimer(
+                          raidStartsAt: raid.raidStartsAt,
+                          onTimerComplete: () async {
+                            await context.read<RaidCubit>().resetRaid();
+                          },
+                        ),
                       ),
                       const SizedBox(height: 24),
 
@@ -223,87 +229,103 @@ class _RaidPageState extends State<RaidPage> {
 
                       const SizedBox(height: 20),
 
-                      Row(
-                        children: <Widget>[
-                          Expanded(
-                            child: Container(
-                              height: 1,
-                              color: AppColors.primary.withValues(alpha: 0.2),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            child: Text(
-                              'RAID MEMBERS',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 3,
-                                color: AppColors.textSecondary.withValues(
-                                  alpha: 0.8,
-                                ),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Container(
-                              height: 1,
-                              color: AppColors.primary.withValues(alpha: 0.2),
-                            ),
-                          ),
-                        ],
-                      ),
+                      const _RaidMembersHeader(),
 
                       const SizedBox(height: 12),
 
                       Expanded(
                         child: raid.members.isEmpty
-                            ? Center(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: <Widget>[
-                                    Icon(
-                                      Icons.group_rounded,
-                                      size: 48,
-                                      color: AppColors.textSecondary.withValues(
-                                        alpha: 0.3,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Text(
-                                      'No players yet',
-                                      style: TextStyle(
-                                        color: AppColors.textSecondary
-                                            .withValues(alpha: 0.5),
-                                        fontSize: 15,
-                                      ),
-                                    ),
-                                  ],
+                            ? const _NoPlayersPlaceholder()
+                            : RepaintBoundary(
+                                child: ListView.separated(
+                                  padding: const EdgeInsets.only(
+                                    bottom: 16,
+                                    left: 16,
+                                    right: 16,
+                                  ),
+                                  itemCount: raid.members.length,
+                                  separatorBuilder:
+                                      (BuildContext context, int index) {
+                                        return const SizedBox(height: 8);
+                                      },
+                                  itemBuilder:
+                                      (BuildContext context, int index) {
+                                        return _MemberTile(
+                                          index: index,
+                                          member: raid.members[index],
+                                        );
+                                      },
                                 ),
-                              )
-                            : ListView.separated(
-                                padding: const EdgeInsets.only(
-                                  bottom: 16,
-                                  left: 16,
-                                  right: 16,
-                                ),
-                                itemCount: raid.members.length,
-                                separatorBuilder:
-                                    (BuildContext context, int index) {
-                                      return const SizedBox(height: 8);
-                                    },
-                                itemBuilder: (BuildContext context, int index) {
-                                  return _MemberTile(
-                                    index: index,
-                                    member: raid.members[index],
-                                  );
-                                },
                               ),
                       ),
                     ],
                   ),
                 );
               },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RaidMembersHeader extends StatelessWidget {
+  const _RaidMembersHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: <Widget>[
+        Expanded(
+          child: Container(
+            height: 1,
+            color: AppColors.primary.withValues(alpha: 0.2),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Text(
+            'RAID MEMBERS',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 3,
+              color: AppColors.textSecondary.withValues(alpha: 0.8),
+            ),
+          ),
+        ),
+        Expanded(
+          child: Container(
+            height: 1,
+            color: AppColors.primary.withValues(alpha: 0.2),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _NoPlayersPlaceholder extends StatelessWidget {
+  const _NoPlayersPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(
+            Icons.group_rounded,
+            size: 48,
+            color: AppColors.textSecondary.withValues(alpha: 0.3),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'No players yet',
+            style: TextStyle(
+              color: AppColors.textSecondary.withValues(alpha: 0.5),
+              fontSize: 15,
             ),
           ),
         ],

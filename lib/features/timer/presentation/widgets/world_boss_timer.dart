@@ -160,7 +160,9 @@ class _WorldBossTimerState extends State<WorldBossTimer>
                                                       4,
                                                     )
                                                 ..color = timerColor.withValues(
-                                                  alpha: 0.95,
+                                                  alpha:
+                                                      0.95 *
+                                                      _pulseAnimation.value,
                                                 ),
                                             ),
                                           ),

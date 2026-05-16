@@ -14,6 +14,47 @@ import '../widgets/raid_status_card.dart';
 class RaidPage extends StatelessWidget {
   const RaidPage({super.key});
 
+  void _showAetherSnackBar(
+    BuildContext context, {
+    required String message,
+    required IconData icon,
+    required Color iconColor,
+  }) {
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.surface.withValues(alpha: 0.9),
+          elevation: 8,
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(
+              color: iconColor.withValues(alpha: 0.5),
+              width: 1.5,
+            ),
+          ),
+          content: Row(
+            children: <Widget>[
+              Icon(icon, color: iconColor, size: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  message,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -32,74 +73,38 @@ class RaidPage extends StatelessWidget {
             child: BlocConsumer<RaidCubit, RaidState>(
               listener: (BuildContext context, RaidState state) {
                 if (state.joinSuccess == true) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Row(
-                        children: <Widget>[
-                          Icon(
-                            Icons.check_circle,
-                            color: AppColors.success,
-                            size: 20,
-                          ),
-                          SizedBox(width: 10),
-                          Text('Successfully joined raid'),
-                        ],
-                      ),
-                    ),
+                  _showAetherSnackBar(
+                    context,
+                    message: 'Successfully joined raid',
+                    icon: Icons.check_circle,
+                    iconColor: AppColors.success,
                   );
                 }
 
                 if (state.joinSuccess == false) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Row(
-                        children: <Widget>[
-                          Icon(
-                            Icons.error_outline,
-                            color: AppColors.error,
-                            size: 20,
-                          ),
-                          SizedBox(width: 10),
-                          Text('Raid is full'),
-                        ],
-                      ),
-                    ),
+                  _showAetherSnackBar(
+                    context,
+                    message: 'Raid is full',
+                    icon: Icons.error_outline,
+                    iconColor: AppColors.error,
                   );
                 }
 
                 if (state.errorMessage != null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Row(
-                        children: <Widget>[
-                          const Icon(
-                            Icons.warning_amber,
-                            color: AppColors.warning,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(child: Text(state.errorMessage!)),
-                        ],
-                      ),
-                    ),
+                  _showAetherSnackBar(
+                    context,
+                    message: state.errorMessage!,
+                    icon: Icons.warning_amber,
+                    iconColor: AppColors.warning,
                   );
                 }
 
                 if (state.resetSuccess == true) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Row(
-                        children: <Widget>[
-                          Icon(
-                            Icons.campaign,
-                            color: AppColors.accentGold,
-                            size: 20,
-                          ),
-                          SizedBox(width: 10),
-                          Text('The World Boss has spawned!'),
-                        ],
-                      ),
-                    ),
+                  _showAetherSnackBar(
+                    context,
+                    message: 'The World Boss has spawned!',
+                    icon: Icons.campaign,
+                    iconColor: AppColors.accentGold,
                   );
                 }
               },
@@ -189,7 +194,7 @@ class RaidPage extends StatelessWidget {
                                   mainAxisSize: MainAxisSize.min,
                                   children: <Widget>[
                                     Icon(
-                                      Icons.group_off,
+                                      Icons.group_rounded,
                                       size: 48,
                                       color: AppColors.textSecondary.withValues(
                                         alpha: 0.3,

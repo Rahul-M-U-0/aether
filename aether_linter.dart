@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'dart:io';
 
 void main() async {
@@ -5,21 +7,27 @@ void main() async {
   print('🛡️  Aether Architecture Linter (Diagnostic Mode) 🛡️');
   print('===================================================');
 
-  final pubspec = File('pubspec.yaml');
+  final File pubspec = File('pubspec.yaml');
   if (!pubspec.existsSync()) {
     print('❌ CRITICAL ERROR: Not running in a Flutter project root.');
     print('💡 HEALING: `cd` into your project directory before running this.');
     return;
   }
 
-  final reportFile = File('ARCHITECTURE_REPORT.md');
-  final out = StringBuffer();
+  final File reportFile = File('ARCHITECTURE_REPORT.md');
+  final StringBuffer out = StringBuffer();
   out.writeln('# Aether Diagnostic Report\n');
+
+  final String flutterCmd = Platform.isWindows
+      ? r'E:\Dev_Tools\flutter_windows_3.41.9-stable\flutter\bin\flutter.bat'
+      : 'flutter';
 
   // 1. Strict Lints
   print('⏳ Running Diagnostic: Code Quality (flutter analyze)...');
   try {
-    final analyze = await Process.run('flutter', ['analyze']);
+    final ProcessResult analyze = await Process.run(flutterCmd, <String>[
+      'analyze',
+    ]);
     if (analyze.exitCode == 0) {
       print('✅ Linter: PASS');
       out.writeln('### 1. Code Quality');
@@ -41,7 +49,7 @@ void main() async {
 
   // 2. Outcome Verification (Tests)
   print('⏳ Running Diagnostic: Concurrency Check (flutter test)...');
-  final testFile = File('test/raid_concurrency_test.dart');
+  final File testFile = File('test/raid_concurrency_test.dart');
 
   if (!testFile.existsSync()) {
     print('❌ Tests: FAIL (raid_concurrency_test.dart is missing)');
@@ -52,7 +60,7 @@ void main() async {
     );
   } else {
     try {
-      final testResult = await Process.run('flutter', [
+      final ProcessResult testResult = await Process.run(flutterCmd, <String>[
         'test',
         'test/raid_concurrency_test.dart',
       ]);

@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:aether/core/theme/app_colors.dart';
+import 'package:aether/features/chat/presentation/cubit/chat_cubit.dart';
+import 'package:aether/features/chat/presentation/widgets/chat_view.dart';
 import 'package:aether/features/raid/domain/entities/raid_entity.dart';
 import 'package:aether/features/raid/presentation/widgets/cosmic_backgrounf.dart';
 import 'package:aether/features/raid/presentation/widgets/raid_appbar.dart';
@@ -9,6 +11,8 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/constants/firestore_constants.dart';
+import '../../../../core/di/injection.dart';
 import '../cubit/raid_cubit.dart';
 import '../cubit/raid_state.dart';
 import '../widgets/join_raid_button.dart';
@@ -121,157 +125,188 @@ class _RaidPageState extends State<RaidPage> {
         preferredSize: Size.fromHeight(kToolbarHeight),
         child: SafeArea(child: AetherAppbar()),
       ),
-      body: Stack(
-        children: <Widget>[
-          const CosmicBackground(),
-          SafeArea(
-            child: BlocConsumer<RaidCubit, RaidState>(
-              listener: (BuildContext context, RaidState state) {
-                if (state.joinSuccess == true) {
-                  _showAetherSnackBar(
-                    context,
-                    message: 'Successfully joined raid',
-                    icon: Icons.check_circle,
-                    iconColor: AppColors.success,
-                  );
-                }
+      body: BlocProvider<ChatCubit>(
+        create: (BuildContext context) => sl<ChatCubit>(),
+        child: Stack(
+          children: <Widget>[
+            const CosmicBackground(),
+            SafeArea(
+              child: BlocConsumer<RaidCubit, RaidState>(
+                listener: (BuildContext context, RaidState state) {
+                  if (state.joinSuccess == true) {
+                    _showAetherSnackBar(
+                      context,
+                      message: 'Successfully joined raid',
+                      icon: Icons.check_circle,
+                      iconColor: AppColors.success,
+                    );
+                  }
 
-                if (state.joinSuccess == false) {
-                  _showAetherSnackBar(
-                    context,
-                    message: 'Raid is full',
-                    icon: Icons.error_outline,
-                    iconColor: AppColors.error,
-                  );
-                }
+                  if (state.joinSuccess == false) {
+                    _showAetherSnackBar(
+                      context,
+                      message: 'Raid is full',
+                      icon: Icons.error_outline,
+                      iconColor: AppColors.error,
+                    );
+                  }
 
-                if (state.errorMessage != null) {
-                  _showAetherSnackBar(
-                    context,
-                    message: state.errorMessage!,
-                    icon: Icons.warning_amber,
-                    iconColor: AppColors.warning,
-                  );
-                }
+                  if (state.errorMessage != null) {
+                    _showAetherSnackBar(
+                      context,
+                      message: state.errorMessage!,
+                      icon: Icons.warning_amber,
+                      iconColor: AppColors.warning,
+                    );
+                  }
 
-                if (state.resetSuccess == true) {
-                  _showAetherSnackBar(
-                    context,
-                    message: 'The World Boss has spawned!',
-                    icon: Icons.campaign,
-                    iconColor: AppColors.accentGold,
-                  );
-                }
-              },
-              builder: (BuildContext context, RaidState state) {
-                final RaidEntity? raid = state.raid;
+                  if (state.resetSuccess == true) {
+                    _showAetherSnackBar(
+                      context,
+                      message: 'The World Boss has spawned!',
+                      icon: Icons.campaign,
+                      iconColor: AppColors.accentGold,
+                    );
+                  }
+                },
+                builder: (BuildContext context, RaidState state) {
+                  final RaidEntity? raid = state.raid;
 
-                if (raid == null || _deviceId == null) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: AppColors.primary),
-                  );
-                }
-
-                final bool isJoined = raid.members.any(
-                  (RaidMember m) => m.id == _deviceId,
-                );
-
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    children: <Widget>[
-                      const SizedBox(height: 8),
-                      RepaintBoundary(
-                        child: WorldBossTimer(
-                          raidStartsAt: raid.raidStartsAt,
-                          onTimerComplete: () async {
-                            await context.read<RaidCubit>().resetRaid();
-                          },
-                        ),
+                  if (raid == null || _deviceId == null) {
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary,
                       ),
-                      const SizedBox(height: 24),
+                    );
+                  }
 
-                      if (!isJoined && !raid.isFull) ...<Widget>[
-                        _NameInput(controller: _nameController),
-                        const SizedBox(height: 16),
-                      ],
+                  final bool isJoined = raid.members.any(
+                    (RaidMember m) => m.id == _deviceId,
+                  );
 
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: <Widget>[
-                          RaidStatusCard(raid: raid),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: JoinRaidButton(
-                              isLoading: state.isLoading,
-                              isFull: raid.isFull,
-                              isJoined: isJoined,
-                              onPressed: () {
-                                final String name = _nameController.text.trim();
-                                if (name.isEmpty) {
-                                  _showAetherSnackBar(
-                                    context,
-                                    message: 'Please enter your name',
-                                    icon: Icons.person_outline,
-                                    iconColor: AppColors.warning,
-                                  );
-                                  return;
-                                }
-                                context.read<RaidCubit>().joinRaid(
-                                  userId: _deviceId!,
-                                  userName: name,
-                                );
-                              },
-                            ),
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      children: <Widget>[
+                        const SizedBox(height: 8),
+                        RepaintBoundary(
+                          child: WorldBossTimer(
+                            raidStartsAt: raid.raidStartsAt,
+                            onTimerComplete: () async {
+                              await context.read<RaidCubit>().resetRaid();
+                            },
                           ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        if (!isJoined && !raid.isFull) ...<Widget>[
+                          _NameInput(controller: _nameController),
+                          const SizedBox(height: 16),
                         ],
-                      ),
 
-                      const SizedBox(height: 20),
-
-                      const _RaidMembersHeader(),
-
-                      const SizedBox(height: 12),
-
-                      Expanded(
-                        child: raid.members.isEmpty
-                            ? const _NoPlayersPlaceholder()
-                            : RepaintBoundary(
-                                child: ListView.separated(
-                                  padding: const EdgeInsets.only(
-                                    bottom: 16,
-                                    left: 16,
-                                    right: 16,
-                                  ),
-                                  itemCount: raid.members.length,
-                                  separatorBuilder:
-                                      (BuildContext context, int index) {
-                                        return const SizedBox(height: 8);
-                                      },
-                                  itemBuilder:
-                                      (BuildContext context, int index) {
-                                        return _MemberTile(
-                                          index: index,
-                                          member: raid.members[index],
-                                        );
-                                      },
-                                ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: <Widget>[
+                            RaidStatusCard(raid: raid),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: JoinRaidButton(
+                                isLoading: state.isLoading,
+                                isFull: raid.isFull,
+                                isJoined: isJoined,
+                                onPressed: () {
+                                  final String name = _nameController.text
+                                      .trim();
+                                  if (name.isEmpty) {
+                                    _showAetherSnackBar(
+                                      context,
+                                      message: 'Please enter your name',
+                                      icon: Icons.person_outline,
+                                      iconColor: AppColors.warning,
+                                    );
+                                    return;
+                                  }
+                                  context.read<RaidCubit>().joinRaid(
+                                    userId: _deviceId!,
+                                    userName: name,
+                                  );
+                                },
                               ),
-                      ),
-                    ],
-                  ),
-                );
-              },
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        _RaidMembersHeader(isJoined: isJoined),
+
+                        const SizedBox(height: 12),
+
+                        Expanded(
+                          child: isJoined
+                              ? ChatView(
+                                  raidId: FirestoreConstants.worldBossDocument,
+                                  sessionId: raid.sessionId,
+                                  currentUserId: _deviceId!,
+                                  currentUserName: raid.members
+                                      .firstWhere(
+                                        (RaidMember m) => m.id == _deviceId,
+                                        orElse: () => const RaidMember(
+                                          id: '',
+                                          name: 'Adventurer',
+                                        ),
+                                      )
+                                      .name,
+                                )
+                              : (raid.members.isEmpty
+                                    ? const _NoPlayersPlaceholder()
+                                    : RepaintBoundary(
+                                        child: ListView.separated(
+                                          padding: const EdgeInsets.only(
+                                            bottom: 16,
+                                            left: 16,
+                                            right: 16,
+                                          ),
+                                          itemCount: raid.members.length,
+                                          separatorBuilder:
+                                              (
+                                                BuildContext context,
+                                                int index,
+                                              ) {
+                                                return const SizedBox(
+                                                  height: 8,
+                                                );
+                                              },
+                                          itemBuilder:
+                                              (
+                                                BuildContext context,
+                                                int index,
+                                              ) {
+                                                return _MemberTile(
+                                                  index: index,
+                                                  member: raid.members[index],
+                                                );
+                                              },
+                                        ),
+                                      )),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
 class _RaidMembersHeader extends StatelessWidget {
-  const _RaidMembersHeader();
+  const _RaidMembersHeader({required this.isJoined});
+
+  final bool isJoined;
 
   @override
   Widget build(BuildContext context) {
@@ -286,7 +321,7 @@ class _RaidMembersHeader extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Text(
-            'RAID MEMBERS',
+            isJoined ? 'RAID CHAT' : 'RAID MEMBERS',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,

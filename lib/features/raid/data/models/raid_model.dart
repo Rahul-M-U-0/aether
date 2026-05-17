@@ -8,6 +8,7 @@ class RaidModel extends RaidEntity {
     required super.slotsFilled,
     required super.members,
     required super.raidStartsAt,
+    required super.sessionId,
   });
 
   factory RaidModel.fromMap(Map<String, dynamic> map) {
@@ -19,6 +20,7 @@ class RaidModel extends RaidEntity {
       raidStartsAt: map['raidStartsAt'] != null
           ? (map['raidStartsAt'] as Timestamp).toDate()
           : throw AppException('Raid document missing raidStartsAt field'),
+      sessionId: map['sessionId'] as String? ?? 'initial_session',
     );
   }
 }

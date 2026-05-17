@@ -26,6 +26,7 @@ class RaidEntity extends Equatable {
     required this.slotsFilled,
     required this.members,
     required this.raidStartsAt,
+    required this.sessionId,
   });
 
   /// Maximum number of players allowed in a single raid.
@@ -34,11 +35,17 @@ class RaidEntity extends Equatable {
   final int slotsFilled;
   final List<RaidMember> members;
   final DateTime raidStartsAt;
+  final String sessionId;
 
   bool get isFull => slotsFilled >= maxSlots;
 
   int get remainingSlots => maxSlots - slotsFilled;
 
   @override
-  List<Object> get props => <Object>[slotsFilled, members, raidStartsAt];
+  List<Object> get props => <Object>[
+    slotsFilled,
+    members,
+    raidStartsAt,
+    sessionId,
+  ];
 }
